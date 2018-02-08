@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export PUNKAVE_PORT="8080";
 export PUNKAVE_MONGODB_CONNECTION_URL='mongodb://localhost:27017';
