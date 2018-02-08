@@ -3,3 +3,4 @@ bin/*.pid
 node_modules
 .env
 conf/*
+!conf/sample

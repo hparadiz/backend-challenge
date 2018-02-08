@@ -20,6 +20,11 @@ class api {
 
             var at = moment.utc(req.query.at);
             
+            /*
+             *  This really should be a seperate function but since this is a tech demo
+             *  I wanted to show how you can create an await-able anonymous function,
+             *  and run it right away.
+             */
             var firstWeatherData = await function () {
                 return new Promise((resolve,reject) => {
                     weather.find({
