@@ -1,0 +1,143 @@
+#!/bin/sh
+set -e
+
+# detect our real working directory through symlinks
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+SOURCE="$(readlink "$SOURCE")"
+[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+# set out working directory
+cd "$DIR/.."
+
+pidfile="bin/$PACKAGE_NAME.pid"
+
+me="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+
+PACKAGE_VERSION=$(cat package.json \
+  | grep version \
+  | head -1 \
+  | awk -F: '{ print $2 }' \
+  | sed 's/[",]//g')
+
+PACKAGE_NAME=$(cat package.json \
+  | grep name \
+  | head -1 \
+  | awk -F: '{ print $2 }' \
+  | sed 's/[",]//g')
+
+PACKAGE_NAME="$(echo "${PACKAGE_NAME}" | tr -d '[:space:]')"
+
+usage() { echo "Usage: $me [status|start|reload|stop]" 1>&2; exit 1; }
+
+function loadenv() {
+    if [ -f ".env" ]
+    then 
+        envtype=$(cat .env)
+        envfile="conf/$envtype"
+
+        if [ -f $envfile ]
+        then
+            . $envfile
+            echo "Loaded environment from $envfile" 
+        else
+            echo "$envfile not found."
+        fi
+    else
+        echo 'Environment type definition not found. Attempting production.'
+        if [ -f 'conf/production' ]
+        then
+            . conf/production
+        else 
+            echo 'Production environment definition not found.'
+        fi
+    fi
+}
+
+function status {
+    if [ -f $pidfile ]
+    then 
+        PID=`cat $pidfile`
+        if ps -p $PID > /dev/null
+        then
+            echo "$PACKAGE_NAME is running on $PID"
+        else
+            echo '$PACKAGE_NAME is not running'
+        fi
+    else
+        echo 'PID file not found.'
+    fi
+}
+
+function stop {
+    echo "Stopping $PACKAGE_NAME"
+    PID=`cat $pidfile`
+
+    if ps -p $PID > /dev/null
+    then
+        kill `cat $pidfile`
+    fi
+    rm $pidfile
+}
+
+function start() {
+    loadenv
+    executable='node app.js "$@"'
+    log="log/$PACKAGE_NAME.log"
+
+    if [ -f $pidfile ]; then 
+        echo "PID file found: " && cat $pidfile && exit 0
+    fi
+
+    daemon() {
+        echo "Starting $PACKAGE_NAME"
+        $executable >> $log 2>&1 &
+        pid="$!"
+        echo $pid > $pidfile
+    }
+
+    npm install --no-save
+    export PATH="node_modules/.bin:$PATH"
+
+    daemon
+}
+
+
+
+while :; do
+    case $1 in
+        status)
+            status
+            break;
+        ;;
+        start)
+            start
+            break
+        ;;
+        reload)
+            stop
+            start
+            break
+        ;;
+        stop)
+            stop
+            break
+        ;;
+        -h|-\?|--help)
+            usage
+            break
+        ;;
+        -v|--version)
+            echo $PACKAGE_VERSION
+            exit 1;
+        ;;
+        *)
+            usage
+            break
+        ;;
+    esac
+    shift
+done
