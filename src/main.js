@@ -1,6 +1,6 @@
 'use strict'
 
-const path = require('path');
+const _ = require('lodash');
 
 class main {
     // ES6 classes do not allow config variables defined in the class so you
@@ -20,47 +20,27 @@ class main {
         this.mongo = require('./classes/drivers/mongo')
         this.mongo.connect();
 
-        // class for handling the web api
-        this.api = require('./controllers/api');
-
-        this.establishRouting();
-
-        this.publicPath = path.resolve(__dirname + '/../public');
+        // loads controllers and runs the routing method in each class so they
+        // can bind themselves to express right in the function
+        
+        // we're using an array to tell the code what to itterate through but
+        // we could also do a directory listing on the controllers directory
+        // and modulize the classes by checking for a routing() method
+        var controllers = ['api','web'];
+        _.each(controllers, (controller) => {
+            this[controller] = require('./controllers/'+controller);
+            if(typeof this[controller].routing == 'function') {
+                this[controller].routing.call(this[controller],this.express);
+            }
+            else {
+                delete this[controller];
+            }
+        })
 
         console.log('backend-challenge server running');
-        
-        
 
         // data intake
         this.intake = require('./classes/intake');
-    }
-
-    establishRouting() {
-        // web stuff
-        this.express.get('/js/*', this.handleStatic.bind(this));
-        this.express.get('/css/*', this.handleStatic.bind(this));
-        this.express.get('/', this.handleIndex.bind(this));
-
-        // debug stuff
-        this.express.get('/intake', this.handleRunIntake.bind(this));
-
-        this.api.routing(this.express);
-    }
-
-    handleRunIntake(req,res) {
-        // for debugging
-        this.intake.run(true);
-        res.sendFile(__dirname + '/views/index.html');
-    }
-
-    handleIndex(req,res) {
-        console.log('Sending index page to client');
-        res.sendFile(__dirname + '/views/index.html');
-    }
-
-    handleStatic(req, res) {
-        console.log('Sending ' + this.publicPath+req.path + ' to client');
-        res.sendFile(this.publicPath+req.path);
     }
 
     handleServerError(e) {
