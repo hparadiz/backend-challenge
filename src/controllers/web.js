@@ -3,6 +3,8 @@
 const path = require('path');
 const jSmart = require('jsmart');
 const fs = require('fs');
+const _ = require('lodash');
+const moment = require('moment');
 
 const mongo = global[process.env.PUNKAVE_GLOBAL_NAMESPACE].mongo;
 
@@ -43,6 +45,11 @@ class web {
                 });
             });
         }.call(this);
+
+        _.each(snaps, (snap) => {
+            snap.timestring = moment(snap.timestamp).toISOString();
+            snap.timestring = snap.timestring.substring(0,snap.timestring.length-5); // removes .000Z from time string
+        });
 
         res.end(this.tpl(this.viewsPath + '/index.tpl',{
             weathersnaps: snaps

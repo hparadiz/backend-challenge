@@ -16,8 +16,8 @@
 			<ul>
 				{foreach from=$weathersnaps item=snap}
 				<li>
-					{$snap.timestamp}
-					<small><a href="/api/v1/stations?at={$snap.timestamp}{*2018-02-08T03:00:00*}">All Stations (API)</a></small>
+					{$snap.timestring}
+					<small><a href="/api/v1/stations?at={$snap.timestring}{*2018-02-08T03:00:00*}">All Stations (API)</a></small>
 				</li>
 				{/foreach}
 			</ul>

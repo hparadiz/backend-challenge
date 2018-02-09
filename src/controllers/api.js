@@ -56,8 +56,10 @@ class api {
                     });
                 });
             }();
-
-            var output = { at: firstWeatherData[0].timestamp };
+            
+            var atstring = moment.utc(firstWeatherData[0].timestamp).toISOString();
+            atstring = atstring.substring(0,atstring.length-5);
+            var output = { at: atstring };
 
             // remove mongo artifacts
             _.each(firstWeatherData, (record) => {
@@ -123,7 +125,9 @@ class api {
             });
         }();
 
-        var output = { at: firstWeatherData[0].timestamp };
+        var atstring = moment.utc(firstWeatherData[0].timestamp).toISOString();
+            atstring = atstring.substring(0,atstring.length-5);
+        var output = { at: atstring };
 
         // remove mongo artifacts
         _.each(firstWeatherData, (record) => {
@@ -216,7 +220,6 @@ class api {
                 // this logic avoids the same data being returned
                 last = _.last(output);
                 if(last) {
-                    console.log(data.at.toString(),last.at.toString());
                     if(data.at.toString() == last.at.toString()) {
                         continue;
                     }
